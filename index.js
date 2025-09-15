@@ -30,9 +30,8 @@ app.post('/webhook', (req, res) => {
   let resposta = 'Pedido recebido! 🍧';
 
   if (intent === '01_Saudacao') {
-  resposta = 'Olá! 👋 Seja bem-vindo ao nosso delivery de Açaí!\n\nMe diga o tamanho que deseja:\n🥤 300ml – R$10\n🥤 500ml – R$15\n🥤 700ml – R$20';
-  aguardandoNovoPedido = false;
-}
+    resposta = 'Olá! 👋 Seja bem-vindo ao nosso delivery de Açaí!\n\nMe diga o tamanho que deseja:\n🥤 300ml – R$10\n🥤 500ml – R$15\n🥤 700ml – R$20';
+    aguardandoNovoPedido = false;
 
   } else if (intent === '02_Selecionar_Tamanho') {
     const novoPedido = { tamanho: params.tamanho_acai };
@@ -42,20 +41,18 @@ app.post('/webhook', (req, res) => {
   } else if (intent === '03_Selecionar_Complementos') {
     let complementos = params.complemento_acai;
 
-if (Array.isArray(complementos)) {
-  // Divide cada item por vírgula
-  complementos = complementos.flatMap(item => item.split(',').map(i => i.trim()));
-} else if (typeof complementos === 'string') {
-  complementos = complementos.split(',').map(item => item.trim());
-} else {
-  complementos = [String(complementos)];
-}
+    if (Array.isArray(complementos)) {
+      complementos = complementos.flatMap(item => item.split(',').map(i => i.trim()));
+    } else if (typeof complementos === 'string') {
+      complementos = complementos.split(',').map(item => item.trim());
+    } else {
+      complementos = [String(complementos)];
+    }
 
-// Traduz os números para nomes
-const traduzidos = complementos.map(item => {
-  const chave = item.trim().toLowerCase();
-  return mapaComplementos[chave] || item;
-});
+    const traduzidos = complementos.map(item => {
+      const chave = item.trim().toLowerCase();
+      return mapaComplementos[chave] || item;
+    });
 
     if (pedidos.length > 0) {
       pedidos[pedidos.length - 1].complementos = traduzidos;
