@@ -3,7 +3,7 @@ const fs = require('fs');
 const app = express();
 app.use(express.json());
 
-// Serve arquivos estáticos (painel.html, pedidos.json, etc.)
+// Serve arquivos estáticos como painel.html e pedidos.json
 app.use(express.static(__dirname));
 
 // Mapa de complementos
@@ -174,7 +174,6 @@ app.post('/webhook', (req, res) => {
       const enderecoFinal = ultimoPedido.endereco || '⚠️ Não informado';
       const total = pedidos.reduce((soma, p) => soma + calcularPreco(p.tamanho), 0);
 
-      // Salva os pedidos em pedidos.json
       fs.writeFileSync('pedidos.json', JSON.stringify(pedidos, null, 2));
 
       resposta =
@@ -189,5 +188,8 @@ app.post('/webhook', (req, res) => {
 
     res.json({ fulfillmentText: resposta });
   } catch (error) {
-    res.status(500).json({ fulfillmentText: 'Ocorreu um erro inesperado
+    res.status(500).json({ fulfillmentText: 'Ocorreu um erro inesperado. Tente novamente.' });
+  }
+});
 
+const PORT = process.env.PORT || 3000
