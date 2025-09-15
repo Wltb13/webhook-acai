@@ -71,13 +71,14 @@ app.post('/webhook', (req, res) => {
 
     const traduzidos = complementos.map(item => {
       const chave = item.trim();
+      // Se for número, traduz, senão tenta por nome (ignorando maiúsculas/minúsculas)
       if (mapaComplementos[chave]) {
         return mapaComplementos[chave];
       } else {
         const encontrado = Object.values(mapaComplementos).find(c =>
           c.toLowerCase() === chave.toLowerCase()
         );
-        return encontrado || chave;
+        return encontrado || item;
       }
     });
 
@@ -89,8 +90,8 @@ app.post('/webhook', (req, res) => {
 
   // Confirmar Novo Açaí
   } else if (intent === '08_Confirmar_Novo_Acai') {
-    // Normaliza texto para melhor comparação
-    const textoNormalizado = textoUsuario.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    // Normaliza texto para melhor comparação, aceitando "Não", "Nao", etc.
+    const textoNormalizado = req.body.queryResult?.queryText?.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     const confirmacao = params.confirmacao?.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') || textoNormalizado;
 
     if (confirmacao.includes('sim')) {
