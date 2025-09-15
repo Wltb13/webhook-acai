@@ -1,10 +1,13 @@
-app.get('/webhook', (req, res) => {
-  res.send('Servidor do Bot_Açaí está ativo!');
-});
 const express = require('express');
 const app = express();
 app.use(express.json());
 
+// Rota de teste no navegador
+app.get('/webhook', (req, res) => {
+  res.send('Servidor do Bot_Açaí está ativo!');
+});
+
+// Mapa de complementos
 const mapaComplementos = {
   '1': 'Banana',
   '2': 'Morango',
@@ -24,10 +27,6 @@ let aguardandoNovoPedido = false;
 app.post('/webhook', (req, res) => {
   const intent = req.body.queryResult?.intent?.displayName;
   const params = req.body.queryResult?.parameters;
-
-  console.log('Intent recebida:', intent);
-  console.log('Parâmetros:', params);
-
   let resposta = 'Pedido recebido! 🍧';
 
   if (intent === '01_Saudacao') {
@@ -106,8 +105,7 @@ app.post('/webhook', (req, res) => {
   res.json({ fulfillmentText: resposta });
 });
 
-const PORT = process.env.PORT || 10000;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
-
