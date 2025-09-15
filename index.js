@@ -89,16 +89,18 @@ app.post('/webhook', (req, res) => {
     resposta = `Complementos anotados: ${traduzidos.join(', ')} 😋 Você gostaria de montar mais um açaí? (Sim ou Não)`;
 
   // Confirmar Novo Açaí
-  } else if (intent === '08_Confirmar_Novo_Acai' || intent === '08_Montar_Novo_Acai') {
-    const confirmacao = params.confirmacao?.toLowerCase() || textoUsuario;
+  } else if (intent === '08_Confirmar_Novo_Acai') {
+  const textoUsuario = req.body.queryResult?.queryText?.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const confirmacao = params.confirmacao?.toLowerCase() || textoUsuario;
 
-    if (confirmacao.includes('sim')) {
-      resposta = 'Beleza! Vamos montar outro açaí 🍧 Qual tamanho você deseja? 🥤';
-    } else if (confirmacao.includes('não')) {
-      resposta = 'Certo! 💰 Qual será a forma de pagamento? (Pix ou Dinheiro)';
-    } else {
-      resposta = 'Desculpe, não entendi. Você gostaria de montar outro açaí? (Sim ou Não)';
-    }
+  if (confirmacao.includes('sim')) {
+    resposta = 'Beleza! Vamos montar outro açaí 🍧 Qual tamanho você deseja? 🥤';
+  } else if (confirmacao.includes('nao')) {
+    resposta = 'Certo! 💰 Qual será a forma de pagamento? (Pix ou Dinheiro)';
+  } else {
+    resposta = 'Desculpe, não entendi. Você gostaria de montar outro açaí? (Sim ou Não)';
+  }
+}
 
   // Pagamento
   } else if (intent === '04_Pagamento') {
