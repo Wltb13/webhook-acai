@@ -151,27 +151,27 @@ app.post('/webhook', (req, res) => {
     // Endereço
     } else if (intent === '07_Endereco') {
       if (pedidos.length > 0) {
-        const endereco = params.endereco || textoUsuario || 'não informado';
+        const endereco = params.endereco || textoUsuario || 'Não informado';
         pedidos[pedidos.length - 1].endereco = endereco;
       } else {
         resposta = 'Você precisa montar um pedido antes de informar o endereço.';
         return res.json({ fulfillmentText: resposta });
       }
 
+      // MELHORIA DO RESUMO DO PEDIDO
       const resumo = pedidos.map((p, i) => (
-        `------------------------------------------\n` +
-        `🍧 Pedido ${i + 1}\n` +
-        `🥤 Tamanho: ${p.tamanho || '*não informado* ⚠️'}\n` +
+        `🍧 Pedido #${i + 1}\n` +
+        `🥤 Tamanho: ${p.tamanho || '⚠️ Não informado'}\n` +
         `🍫 Complementos:\n${
           Array.isArray(p.complementos) && p.complementos.length > 0
-            ? p.complementos.map(c => `  - ${c}`).join('\n')
-            : '  - não informado ⚠️'
+            ? p.complementos.map(c => `   - ${c}`).join('\n')
+            : '   ⚠️ Não informado'
         }\n` +
-        `💰 Pagamento: ${p.pagamento || '*não informado* ⚠️'}\n` +
-        `🏠 Endereço: ${p.endereco || '*não informado* ⚠️'}\n`
-      )).join('\n');
+        `💰 Pagamento: ${p.pagamento ? p.pagamento : '⚠️ Não informado'}\n` +
+        `🏠 Endereço: ${p.endereco ? p.endereco : '⚠️ Não informado'}\n`
+      )).join('\n----------------------------------------\n');
 
-      resposta = `🧾 Resumo do seu pedido (Total: ${pedidos.length}):\n\n${resumo}\n✅ Tudo certo! Obrigado por comprar com a gente 🍧🚀`;
+      resposta = `🧾 Resumo do seu pedido (Total: ${pedidos.length})\n\n${resumo}\n✅ Tudo certo! Obrigado por comprar com a gente 🍧🚀\nEm breve entraremos em contato para finalizar seu pedido!`;
     }
 
     res.json({ fulfillmentText: resposta });
