@@ -1,12 +1,16 @@
-{
-  "name": "webhook-acai",
-  "version": "1.0.0",
-  "main": "index.js",
-  "scripts": {
-    "start": "node index.js"
-  },
-  "dependencies": {
-    "express": "^4.18.2"
-  }
-}
+# Usa imagem base do Node
+FROM node:18
 
+# Cria diretório de trabalho
+WORKDIR /app
+
+# Copia os arquivos do projeto
+COPY package*.json ./
+RUN npm install
+COPY . .
+
+# Expõe a porta usada pelo servidor
+EXPOSE 3000
+
+# Comando para iniciar o servidor
+CMD ["npm", "start"]
