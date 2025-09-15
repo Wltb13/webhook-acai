@@ -30,8 +30,9 @@ app.post('/webhook', (req, res) => {
   let resposta = 'Pedido recebido! 🍧';
 
   if (intent === '01_Saudacao') {
-    resposta = 'Olá! 👋 Seja bem-vindo ao nosso delivery de Açaí! Vamos montar seu pedido. Qual tamanho você deseja? 🥤 300ml, 500ml ou 700ml';
-    aguardandoNovoPedido = false;
+  resposta = 'Olá! 👋 Seja bem-vindo ao nosso delivery de Açaí!\n\nMe diga o tamanho que deseja:\n🥤 300ml – R$10\n🥤 500ml – R$15\n🥤 700ml – R$20';
+  aguardandoNovoPedido = false;
+}
 
   } else if (intent === '02_Selecionar_Tamanho') {
     const novoPedido = { tamanho: params.tamanho_acai };
