@@ -27,6 +27,7 @@ let aguardandoNovoPedido = false;
 app.post('/webhook', (req, res) => {
   const intent = req.body.queryResult?.intent?.displayName;
   const params = req.body.queryResult?.parameters;
+  const textoUsuario = req.body.queryResult?.queryText?.toLowerCase();
   let resposta = 'Pedido recebido! 🍧';
 
   if (intent === '01_Saudacao') {
@@ -62,15 +63,15 @@ app.post('/webhook', (req, res) => {
     resposta = `Complementos anotados: ${traduzidos.join(', ')} 😋 Você gostaria de montar mais um açaí? (Sim ou Não)`;
 
   } else if (intent === '08_Montar_Novo_Acai') {
-  const textoUsuario = req.body.queryResult?.queryText?.toLowerCase();
-  const confirmacao = params.confirmacao?.toLowerCase() || textoUsuario;
+    const confirmacao = params.confirmacao?.toLowerCase() || textoUsuario;
 
-  if (confirmacao.includes('sim')) {
-    resposta = 'Beleza! Vamos montar outro açaí 🍧 Qual tamanho você deseja? 🥤';
-  } else {
-    resposta = 'Certo! 💰 Qual será a forma de pagamento? (Pix ou Dinheiro)';
-  }
-}
+    if (confirmacao.includes('sim')) {
+      resposta = 'Beleza! Vamos montar outro açaí 🍧 Qual tamanho você deseja? 🥤';
+      aguardandoNovoPedido = false;
+    } else {
+      resposta = 'Certo! 💰 Qual será a forma de pagamento? (Pix ou Dinheiro)';
+      aguardandoNovoPedido = false;
+    }
 
   } else if (intent === '04_Pagamento') {
     if (pedidos.length > 0) {
