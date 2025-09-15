@@ -13,26 +13,39 @@ app.post('/webhook', (req, res) => {
 
   if (intent === '01_Saudacao') {
     resposta = 'Olá! 👋 Seja bem-vindo ao nosso delivery de Açaí! Qual tamanho você deseja? 🥤 300ml, 500ml ou 700ml';
-  
+
   } else if (intent === '02_Selecionar_Tamanho') {
     resposta = 'Show! Agora escolha até 3 complementos para seu açaí. Pode responder com os números ou os nomes.';
-  
+
   } else if (intent === '03_Selecionar_Complementos') {
     const complementos = params.complemento;
     const lista = Array.isArray(complementos)
       ? complementos.join(', ')
-      : complementos;
+      : complementos || 'nenhum';
     resposta = `Complementos anotados: ${lista} 😋 Quer montar mais um açaí ou seguir para o pagamento?`;
-  
+
   } else if (intent === '04_Pagamento') {
     resposta = 'Certo! 💰 Aceitamos Pix ou Dinheiro. Vai precisar de troco?';
-  
+
   } else if (intent === '05_Confirma_Pagamento') {
     resposta = 'Pagamento confirmado! 🧾 Agora me diga o endereço completo para a entrega. 🏠';
-  
+
   } else if (intent === '06_Confirmar_Pedido') {
-    resposta = 'Pedido fechado! Obrigado por comprar com a gente 🍧🚀';
-  
+    const tamanho = params.tamanho || 'não informado';
+    const complementos = params.complemento;
+    const lista = Array.isArray(complementos)
+      ? complementos.join(', ')
+      : complementos || 'nenhum';
+    const pagamento = params.pagamento || 'não informado';
+    const endereco = params.endereco || 'não informado';
+
+    resposta = `🧾 Resumo do seu pedido:\n` +
+               `🥤 Tamanho: ${tamanho}\n` +
+               `🍫 Complementos: ${lista}\n` +
+               `💰 Pagamento: ${pagamento}\n` +
+               `🏠 Endereço: ${endereco}\n\n` +
+               `Seu pedido está a caminho! Obrigado por comprar com a gente 🍧🚀`;
+
   } else if (intent === '07_Endereco') {
     const endereco = params.endereco || 'Endereço não informado';
     resposta = `Endereço recebido: ${endereco} 🏡 Seu pedido está a caminho!`;
