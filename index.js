@@ -2,11 +2,6 @@ const express = require('express');
 const app = express();
 app.use(express.json());
 
-// Rota de teste no navegador
-app.get('/webhook', (req, res) => {
-  res.send('Servidor do Bot_Açaí está ativo!');
-});
-
 // Mapa de complementos
 const mapaComplementos = {
   '1': 'Banana',
@@ -21,10 +16,15 @@ const mapaComplementos = {
   '10': 'Coco ralado'
 };
 
-// Pedidos por sessão
+// Pedidos por sessão (evita misturar pedidos de diferentes usuários)
 const pedidosPorSessao = {};
 
+app.get('/webhook', (req, res) => {
+  res.send('🚀 Bot Açaí rodando com sucesso!');
+});
+
 app.post('/webhook', (req, res) => {
+  // Identificador de sessão (pode ser session/sessionId do Dialogflow)
   const sessionId = req.body.session || req.body.sessionId || 'default';
   if (!pedidosPorSessao[sessionId]) {
     pedidosPorSessao[sessionId] = [];
@@ -37,20 +37,26 @@ app.post('/webhook', (req, res) => {
 
   let resposta = 'Pedido recebido! 🍧';
 
+  // Saudação - reinicia pedidos da sessão
   if (intent === '01_Saudacao') {
+    pedidosPorSessao[sessionId] = [];
     resposta = 'Olá! 👋 Seja bem-vindo ao nosso delivery de Açaí!\n\nMe diga o tamanho que deseja:\n🥤 300ml – R$10\n🥤 500ml – R$15\n🥤 700ml – R$20';
-    pedidosPorSessao[sessionId] = []; // Reinicia pedidos na saudação
 
+  // Selecionar Tamanho
   } else if (intent === '02_Selecionar_Tamanho') {
-    const novoPedido = { tamanho: params.tamanho_acai };
-    pedidos.push(novoPedido);
-    resposta = `Tamanho ${params.tamanho_acai} anotado! Agora escolha até 3 complementos 🍫 Pode responder com os números (ex: 1, 3, 5) ou os nomes.`;
+    const tamanho = params.tamanho_acai || textoUsuario.match(/(300ml|500ml|700ml)/)?.[0];
+    if (!tamanho) {
+      resposta = 'Por favor, informe o tamanho do açaí (300ml, 500ml ou 700ml).';
+    } else {
+      const novoPedido = { tamanho: tamanho };
+      pedidos.push(novoPedido);
+      resposta = `Tamanho ${tamanho} anotado! Agora escolha até 3 complementos 🍫 Pode responder com os números (ex: 1, 3, 5) ou os nomes.`;
+    }
 
+  // Selecionar Complementos
   } else if (intent === '03_Selecionar_Complementos') {
     let complementos = params.complemento_acai;
-
     if (Array.isArray(complementos)) {
-      // Já é array, mas pode vir com itens separados por vírgula
       complementos = complementos.flatMap(item => item.split(',').map(i => i.trim()));
     } else if (typeof complementos === 'string') {
       complementos = complementos.split(',').map(item => item.trim());
@@ -69,7 +75,6 @@ app.post('/webhook', (req, res) => {
       if (mapaComplementos[chave]) {
         return mapaComplementos[chave];
       } else {
-        // Procura por nome, ignorando maiúsculas/minúsculas
         const encontrado = Object.values(mapaComplementos).find(c =>
           c.toLowerCase() === chave.toLowerCase()
         );
@@ -83,45 +88,40 @@ app.post('/webhook', (req, res) => {
 
     resposta = `Complementos anotados: ${traduzidos.join(', ')} 😋 Você gostaria de montar mais um açaí? (Sim ou Não)`;
 
-  } else if (intent === '08_Montar_Novo_Acai') {
+  // Confirmar Novo Açaí
+  } else if (intent === '08_Confirmar_Novo_Acai' || intent === '08_Montar_Novo_Acai') {
     const confirmacao = params.confirmacao?.toLowerCase() || textoUsuario;
 
     if (confirmacao.includes('sim')) {
       resposta = 'Beleza! Vamos montar outro açaí 🍧 Qual tamanho você deseja? 🥤';
-    } else {
+    } else if (confirmacao.includes('não')) {
       resposta = 'Certo! 💰 Qual será a forma de pagamento? (Pix ou Dinheiro)';
+    } else {
+      resposta = 'Desculpe, não entendi. Você gostaria de montar outro açaí? (Sim ou Não)';
     }
 
+  // Pagamento
   } else if (intent === '04_Pagamento') {
     if (pedidos.length > 0) {
-      pedidos[pedidos.length - 1].pagamento = params.pagamento || 'não informado';
+      pedidos[pedidos.length - 1].pagamento = params.pagamento || textoUsuario.match(/pix|dinheiro/)?.[0] || 'não informado';
     }
     resposta = 'Pagamento anotado! 🧾 Agora me diga o endereço completo para a entrega. 🏠';
 
+  // Endereço
   } else if (intent === '07_Endereco') {
     if (pedidos.length > 0) {
-      pedidos[pedidos.length - 1].endereco = params.endereco || 'não informado';
+      pedidos[pedidos.length - 1].endereco = params.endereco || textoUsuario || 'não informado';
     }
 
-    if (pedidos.length === 1) {
-      const p = pedidos[0];
-      resposta = `🧾 Resumo do seu pedido:\n` +
-                 `🥤 Tamanho: ${p.tamanho}\n` +
-                 `🍫 Complementos: ${p.complementos?.join(', ') || 'não informado'}\n` +
-                 `💰 Pagamento: ${p.pagamento || 'não informado'}\n` +
-                 `🏠 Endereço: ${p.endereco || 'não informado'}\n\n` +
-                 `✅ Pedido confirmado! Obrigado por comprar com a gente 🍧🚀`;
-    } else {
-      const resumo = pedidos.map((p, i) => {
-        return `🍧 Pedido ${i + 1}:\n` +
-               `🥤 Tamanho: ${p.tamanho}\n` +
-               `🍫 Complementos: ${p.complementos?.join(', ') || 'não informado'}\n` +
-               `💰 Pagamento: ${p.pagamento || 'não informado'}\n` +
-               `🏠 Endereço: ${p.endereco || 'não informado'}`;
-      }).join('\n\n');
+    const resumo = pedidos.map((p, i) => (
+      `🍧 Pedido ${i + 1}:\n` +
+      `🥤 Tamanho: ${p.tamanho}\n` +
+      `🍫 Complementos: ${p.complementos?.join(', ') || 'não informado'}\n` +
+      `💰 Pagamento: ${p.pagamento || 'não informado'}\n` +
+      `🏠 Endereço: ${p.endereco || 'não informado'}`
+    )).join('\n\n');
 
-      resposta = `🧾 Resumo dos seus pedidos:\n\n${resumo}\n\n✅ Tudo certo! Obrigado por comprar com a gente 🍧🚀`;
-    }
+    resposta = `🧾 Resumo do seu pedido:\n\n${resumo}\n\n✅ Tudo certo! Obrigado por comprar com a gente 🍧🚀`;
   }
 
   res.json({ fulfillmentText: resposta });
@@ -129,5 +129,5 @@ app.post('/webhook', (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
+  console.log(`✅ Servidor rodando na porta ${PORT}`);
 });
