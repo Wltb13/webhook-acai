@@ -33,9 +33,11 @@ app.post('/webhook', (req, res) => {
   } else if (intent === '03_Selecionar_Complementos') {
     let complementos = params.complemento || params.complementos || params.sabores;
 
-    // Se vier como string, transforma em array
+    // Garante que seja array
     if (typeof complementos === 'string') {
       complementos = complementos.split(',').map(item => item.trim());
+    } else if (!Array.isArray(complementos)) {
+      complementos = [String(complementos)];
     }
 
     // Traduz números para nomes
@@ -62,6 +64,8 @@ app.post('/webhook', (req, res) => {
 
     if (typeof complementos === 'string') {
       complementos = complementos.split(',').map(item => item.trim());
+    } else if (!Array.isArray(complementos)) {
+      complementos = [String(complementos)];
     }
 
     const listaFinal = complementos.map(item => {
