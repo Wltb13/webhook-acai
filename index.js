@@ -21,18 +21,25 @@ const mapaComplementos = {
   '10': 'Coco ralado'
 };
 
-let pedidos = [];
-let aguardandoNovoPedido = false;
+// Pedidos por sessão
+const pedidosPorSessao = {};
 
 app.post('/webhook', (req, res) => {
+  const sessionId = req.body.session || req.body.sessionId || 'default';
+  if (!pedidosPorSessao[sessionId]) {
+    pedidosPorSessao[sessionId] = [];
+  }
+  let pedidos = pedidosPorSessao[sessionId];
+
   const intent = req.body.queryResult?.intent?.displayName;
-  const params = req.body.queryResult?.parameters;
-  const textoUsuario = req.body.queryResult?.queryText?.toLowerCase();
+  const params = req.body.queryResult?.parameters || {};
+  const textoUsuario = req.body.queryResult?.queryText?.toLowerCase() || '';
+
   let resposta = 'Pedido recebido! 🍧';
 
   if (intent === '01_Saudacao') {
     resposta = 'Olá! 👋 Seja bem-vindo ao nosso delivery de Açaí!\n\nMe diga o tamanho que deseja:\n🥤 300ml – R$10\n🥤 500ml – R$15\n🥤 700ml – R$20';
-    aguardandoNovoPedido = false;
+    pedidosPorSessao[sessionId] = []; // Reinicia pedidos na saudação
 
   } else if (intent === '02_Selecionar_Tamanho') {
     const novoPedido = { tamanho: params.tamanho_acai };
@@ -43,23 +50,37 @@ app.post('/webhook', (req, res) => {
     let complementos = params.complemento_acai;
 
     if (Array.isArray(complementos)) {
+      // Já é array, mas pode vir com itens separados por vírgula
       complementos = complementos.flatMap(item => item.split(',').map(i => i.trim()));
     } else if (typeof complementos === 'string') {
       complementos = complementos.split(',').map(item => item.trim());
-    } else {
+    } else if (complementos) {
       complementos = [String(complementos)];
+    } else {
+      complementos = [];
     }
 
+    // Limita a 3 complementos
+    complementos = complementos.slice(0, 3);
+
     const traduzidos = complementos.map(item => {
-      const chave = item.trim().toLowerCase();
-      return mapaComplementos[chave] || item;
+      const chave = item.trim();
+      // Se for número, traduz, senão tenta por nome (ignorando maiúsculas/minúsculas)
+      if (mapaComplementos[chave]) {
+        return mapaComplementos[chave];
+      } else {
+        // Procura por nome, ignorando maiúsculas/minúsculas
+        const encontrado = Object.values(mapaComplementos).find(c =>
+          c.toLowerCase() === chave.toLowerCase()
+        );
+        return encontrado || item;
+      }
     });
 
     if (pedidos.length > 0) {
       pedidos[pedidos.length - 1].complementos = traduzidos;
     }
 
-    aguardandoNovoPedido = true;
     resposta = `Complementos anotados: ${traduzidos.join(', ')} 😋 Você gostaria de montar mais um açaí? (Sim ou Não)`;
 
   } else if (intent === '08_Montar_Novo_Acai') {
@@ -67,10 +88,8 @@ app.post('/webhook', (req, res) => {
 
     if (confirmacao.includes('sim')) {
       resposta = 'Beleza! Vamos montar outro açaí 🍧 Qual tamanho você deseja? 🥤';
-      aguardandoNovoPedido = false;
     } else {
       resposta = 'Certo! 💰 Qual será a forma de pagamento? (Pix ou Dinheiro)';
-      aguardandoNovoPedido = false;
     }
 
   } else if (intent === '04_Pagamento') {
