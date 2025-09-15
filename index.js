@@ -188,8 +188,3 @@ app.post('/webhook', (req, res) => {
 
     res.json({ fulfillmentText: resposta });
   } catch (error) {
-    res.status(500).json({ fulfillmentText: 'Ocorreu um erro inesperado. Tente novamente.' });
-  }
-});
-
-const PORT = process.env.PORT || 3000
