@@ -42,20 +42,20 @@ app.post('/webhook', (req, res) => {
   } else if (intent === '03_Selecionar_Complementos') {
     let complementos = params.complemento_acai;
 
-    // Corrige formato: ['1,2,3'] → ['1', '2', '3']
-    if (Array.isArray(complementos)) {
-      complementos = complementos.flatMap(item => item.split(',').map(i => i.trim()));
-    } else if (typeof complementos === 'string') {
-      complementos = complementos.split(',').map(item => item.trim());
-    } else {
-      complementos = [String(complementos)];
-    }
+if (Array.isArray(complementos)) {
+  // Divide cada item por vírgula
+  complementos = complementos.flatMap(item => item.split(',').map(i => i.trim()));
+} else if (typeof complementos === 'string') {
+  complementos = complementos.split(',').map(item => item.trim());
+} else {
+  complementos = [String(complementos)];
+}
 
-    // Traduz números para nomes
-    const traduzidos = complementos.map(item => {
-      const chave = item.trim().toLowerCase();
-      return mapaComplementos[chave] || item;
-    });
+// Traduz os números para nomes
+const traduzidos = complementos.map(item => {
+  const chave = item.trim().toLowerCase();
+  return mapaComplementos[chave] || item;
+});
 
     if (pedidos.length > 0) {
       pedidos[pedidos.length - 1].complementos = traduzidos;
