@@ -24,7 +24,7 @@ app.get('/webhook', (req, res) => {
 });
 
 app.post('/webhook', (req, res) => {
-  // Identificador de sessão (pode ser session/sessionId do Dialogflow)
+  // Identificador de sessão
   const sessionId = req.body.session || req.body.sessionId || 'default';
   if (!pedidosPorSessao[sessionId]) {
     pedidosPorSessao[sessionId] = [];
@@ -71,14 +71,13 @@ app.post('/webhook', (req, res) => {
 
     const traduzidos = complementos.map(item => {
       const chave = item.trim();
-      // Se for número, traduz, senão tenta por nome (ignorando maiúsculas/minúsculas)
       if (mapaComplementos[chave]) {
         return mapaComplementos[chave];
       } else {
         const encontrado = Object.values(mapaComplementos).find(c =>
           c.toLowerCase() === chave.toLowerCase()
         );
-        return encontrado || item;
+        return encontrado || chave;
       }
     });
 
@@ -90,35 +89,37 @@ app.post('/webhook', (req, res) => {
 
   // Confirmar Novo Açaí
   } else if (intent === '08_Confirmar_Novo_Acai') {
-  const textoUsuario = req.body.queryResult?.queryText?.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  const confirmacao = params.confirmacao?.toLowerCase() || textoUsuario;
+    // Normaliza texto para melhor comparação
+    const textoNormalizado = textoUsuario.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const confirmacao = params.confirmacao?.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') || textoNormalizado;
 
-  if (confirmacao.includes('sim')) {
-    resposta = 'Beleza! Vamos montar outro açaí 🍧 Qual tamanho você deseja? 🥤';
-  } else if (confirmacao.includes('nao')) {
-    resposta = 'Certo! 💰 Qual será a forma de pagamento? (Pix ou Dinheiro)';
-  } else {
-    resposta = 'Desculpe, não entendi. Você gostaria de montar outro açaí? (Sim ou Não)';
-  }
-}
+    if (confirmacao.includes('sim')) {
+      resposta = 'Beleza! Vamos montar outro açaí 🍧 Qual tamanho você deseja? 🥤';
+    } else if (confirmacao.includes('nao')) {
+      resposta = 'Certo! 💰 Qual será a forma de pagamento? (Pix ou Dinheiro)';
+    } else {
+      resposta = 'Desculpe, não entendi. Você gostaria de montar outro açaí? (Sim ou Não)';
+    }
 
   // Pagamento
   } else if (intent === '04_Pagamento') {
     if (pedidos.length > 0) {
-      pedidos[pedidos.length - 1].pagamento = params.pagamento || textoUsuario.match(/pix|dinheiro/)?.[0] || 'não informado';
+      const pagamento = params.pagamento || textoUsuario.match(/pix|dinheiro/)?.[0] || 'não informado';
+      pedidos[pedidos.length - 1].pagamento = pagamento;
     }
     resposta = 'Pagamento anotado! 🧾 Agora me diga o endereço completo para a entrega. 🏠';
 
   // Endereço
   } else if (intent === '07_Endereco') {
     if (pedidos.length > 0) {
-      pedidos[pedidos.length - 1].endereco = params.endereco || textoUsuario || 'não informado';
+      const endereco = params.endereco || textoUsuario || 'não informado';
+      pedidos[pedidos.length - 1].endereco = endereco;
     }
 
     const resumo = pedidos.map((p, i) => (
       `🍧 Pedido ${i + 1}:\n` +
-      `🥤 Tamanho: ${p.tamanho}\n` +
-      `🍫 Complementos: ${p.complementos?.join(', ') || 'não informado'}\n` +
+      `🥤 Tamanho: ${p.tamanho || 'não informado'}\n` +
+      `🍫 Complementos: ${Array.isArray(p.complementos) ? p.complementos.join(', ') : 'não informado'}\n` +
       `💰 Pagamento: ${p.pagamento || 'não informado'}\n` +
       `🏠 Endereço: ${p.endereco || 'não informado'}`
     )).join('\n\n');
