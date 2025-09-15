@@ -107,8 +107,24 @@ app.post('/webhook', (req, res) => {
     if (pedidos.length > 0) {
       const pagamento = params.pagamento || textoUsuario.match(/pix|dinheiro/)?.[0] || 'não informado';
       pedidos[pedidos.length - 1].pagamento = pagamento;
+
+      if (pagamento.toLowerCase() === 'dinheiro') {
+        resposta = 'Pagamento anotado! 💵 Você vai precisar de troco para quanto? Se não precisar, pode responder "não preciso de troco".';
+      } else {
+        resposta = 'Pagamento anotado! 🧾 Agora me diga o endereço completo para a entrega. 🏠';
+      }
     }
-    resposta = 'Pagamento anotado! 🧾 Agora me diga o endereço completo para a entrega. 🏠';
+
+  // Troco para dinheiro
+  } else if (intent === '10_Troco_Sim' || intent === '09_Troco_Nao') {
+    if (pedidos.length > 0) {
+      let troco = params.troco || textoUsuario || '';
+      if (intent === '09_Troco_Nao') {
+        troco = 'Não preciso de troco';
+      }
+      pedidos[pedidos.length - 1].troco = troco;
+    }
+    resposta = 'Troco anotado! Agora me diga o endereço completo para a entrega. 🏠';
 
   // Endereço
   } else if (intent === '07_Endereco') {
@@ -122,6 +138,7 @@ app.post('/webhook', (req, res) => {
       `🥤 Tamanho: ${p.tamanho || 'não informado'}\n` +
       `🍫 Complementos: ${Array.isArray(p.complementos) ? p.complementos.join(', ') : 'não informado'}\n` +
       `💰 Pagamento: ${p.pagamento || 'não informado'}\n` +
+      (p.pagamento && p.pagamento.toLowerCase() === 'dinheiro' && p.troco ? `💵 Troco: ${p.troco}\n` : '') +
       `🏠 Endereço: ${p.endereco || 'não informado'}`
     )).join('\n\n');
 
