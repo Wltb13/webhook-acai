@@ -2,19 +2,12 @@ const express = require('express');
 const app = express();
 app.use(express.json());
 
-const listaComplementos = {
-  1: 'Banana',
-  2: 'Morango',
-  3: 'Leite condensado',
-  4: 'Granola',
-  5: 'Paçoca',
-  6: 'Nutella',
-  7: 'Leite em pó',
-  8: 'Ovomaltine',
-  9: 'Gotas de chocolate',
-  10: 'Coco ralado'
-};
+// Rota GET opcional para teste no navegador
+app.get('/webhook', (req, res) => {
+  res.send('Webhook ativo e aguardando POST do Dialogflow!');
+});
 
+// Rota principal do webhook
 app.post('/webhook', (req, res) => {
   const intent = req.body.queryResult?.intent?.displayName;
   const params = req.body.queryResult?.parameters;
@@ -31,7 +24,7 @@ app.post('/webhook', (req, res) => {
     resposta = 'Show! Agora escolha até 3 complementos para seu açaí. Pode responder com os números (ex: 1, 3, 5) ou os nomes.';
 
   } else if (intent === '03_Selecionar_Complementos') {
-    let complementos = params.complemento || params.complementos || params.sabores;
+    let complementos = params.complemento_acai;
 
     // Garante que seja array
     if (typeof complementos === 'string') {
@@ -40,13 +33,7 @@ app.post('/webhook', (req, res) => {
       complementos = [String(complementos)];
     }
 
-    // Traduz números para nomes
-    const listaFinal = complementos.map(item => {
-      const numero = parseInt(item);
-      return listaComplementos[numero] || item;
-    });
-
-    resposta = `Complementos anotados: ${listaFinal.join(', ')} 😋 Quer montar mais um açaí ou seguir para o pagamento?`;
+    resposta = `Complementos anotados: ${complementos.join(', ')} 😋 Quer montar mais um açaí ou seguir para o pagamento?`;
 
   } else if (intent === '04_Pagamento') {
     resposta = 'Certo! 💰 Aceitamos Pix ou Dinheiro. Vai precisar de troco?';
@@ -59,8 +46,8 @@ app.post('/webhook', (req, res) => {
     resposta = `Endereço recebido: ${endereco} 🏡 Seu pedido está a caminho!`;
 
   } else if (intent === '06_Confirmar_Pedido') {
-    const tamanho = params.tamanho || 'não informado';
-    let complementos = params.complemento || params.complementos || params.sabores;
+    const tamanho = params.tamanho_acai || 'não informado';
+    let complementos = params.complemento_acai;
 
     if (typeof complementos === 'string') {
       complementos = complementos.split(',').map(item => item.trim());
@@ -68,17 +55,12 @@ app.post('/webhook', (req, res) => {
       complementos = [String(complementos)];
     }
 
-    const listaFinal = complementos.map(item => {
-      const numero = parseInt(item);
-      return listaComplementos[numero] || item;
-    });
-
     const pagamento = params.pagamento || 'não informado';
     const endereco = params.endereco || 'não informado';
 
     resposta = `🧾 Resumo do seu pedido:\n` +
                `🥤 Tamanho: ${tamanho}\n` +
-               `🍫 Complementos: ${listaFinal.join(', ')}\n` +
+               `🍫 Complementos: ${complementos.join(', ')}\n` +
                `💰 Pagamento: ${pagamento}\n` +
                `🏠 Endereço: ${endereco}\n\n` +
                `Seu pedido está a caminho! Obrigado por comprar com a gente 🍧🚀`;
@@ -87,11 +69,8 @@ app.post('/webhook', (req, res) => {
   res.json({ fulfillmentText: resposta });
 });
 
-app.get('/', (req, res) => {
-  res.send('Servidor do Bot_Açai está ativo!');
-});
-
-const PORT = process.env.PORT || 3000;
+// Inicializa o servidor
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
