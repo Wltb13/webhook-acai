@@ -1,3 +1,6 @@
+app.get('/webhook', (req, res) => {
+  res.send('Servidor do Bot_Açaí está ativo!');
+});
 const express = require('express');
 const app = express();
 app.use(express.json());
