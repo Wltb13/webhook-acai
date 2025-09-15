@@ -33,6 +33,12 @@ app.get('/webhook', (req, res) => {
   res.send('🚀 Bot Açaí rodando com sucesso!');
 });
 
+function getComplementosLista() {
+  return Object.entries(mapaComplementos)
+    .map(([num, nome]) => `${num} - ${nome}`)
+    .join('\n');
+}
+
 app.post('/webhook', (req, res) => {
   try {
     // Identificador de sessão
@@ -61,7 +67,8 @@ app.post('/webhook', (req, res) => {
       } else {
         const novoPedido = { tamanho: tamanho };
         pedidos.push(novoPedido);
-        resposta = `Tamanho ${tamanho} anotado! Agora escolha até 3 complementos 🍫 Pode responder com os números (ex: 1, 3, 5) ou os nomes.`;
+        resposta =
+          `Tamanho ${tamanho} anotado!\n\nAgora escolha até 3 complementos 🍫 \n${getComplementosLista()}\nPode responder com os números (ex: 1, 3, 5) ou os nomes.`;
       }
 
     // Selecionar Complementos
@@ -159,23 +166,28 @@ app.post('/webhook', (req, res) => {
       }
 
       // RESUMO FINAL DO PEDIDO
-      const resumo = pedidos.map((p, i) => (
-        `🍧 Pedido #${i + 1}\n` +
+      const resumoPedidos = pedidos.map((p, i) =>
+        '------------------------------------------\n' +
+        `🍧 Pedido ${i + 1}\n` +
         `🥤 Tamanho: ${p.tamanho || '⚠️ Não informado'}\n` +
         `🍫 Complementos:\n${
           Array.isArray(p.complementos) && p.complementos.length > 0
             ? p.complementos.map(c => `   - ${c}`).join('\n')
             : '   ⚠️ Não informado'
-        }\n' +
-        // Só mostra pagamento/endereço no último pedido
-        (i === pedidos.length - 1 ? 
-          (p.pagamento ? `💰 Pagamento: ${p.pagamento}\n` : '') +
-          (p.endereco ? `🏠 Endereço: ${p.endereco}\n` : '')
-          : ''
-        )
-      )).join('\n------------------------------------------\n');
+        }`
+      ).join('\n');
 
-      resposta = `🧾 Resumo do seu pedido (Total: ${pedidos.length})\n\n${resumo}\n✅ Tudo certo! Obrigado por comprar com a gente 🍧🚀\nEm breve entraremos em contato para finalizar seu pedido[...]`;
+      const ultimoPedido = pedidos[pedidos.length - 1] || {};
+      const pagamento = ultimoPedido.pagamento || '⚠️ Não informado';
+      const enderecoFinal = ultimoPedido.endereco || '⚠️ Não informado';
+
+      resposta =
+        `🧾 Resumo do seu pedido (Total: ${pedidos.length})\n\n` +
+        `${resumoPedidos}\n` +
+        '------------------------------------------\n' +
+        `💰 Pagamento: ${pagamento}\n` +
+        `🏠 Endereço: ${enderecoFinal}\n\n` +
+        '✅ Tudo certo! Obrigado por comprar com a gente 🍧🚀\nEm breve entraremos em contato para finalizar seu pedido!';
     }
 
     res.json({ fulfillmentText: resposta });
