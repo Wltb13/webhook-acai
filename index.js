@@ -137,11 +137,11 @@ app.post('/webhook', (req, res) => {
   `------------------------------------------\n` +
   `🍧 Pedido ${i + 1}\n` +
   `🥤 Tamanho: ${p.tamanho || '*não informado* ⚠️'}\n` +
-  `🍫 Complementos: ${
-    Array.isArray(p.complementos) && p.complementos.length > 0
-      ? p.complementos.join(', ')
-      : '*não informado* ⚠️'
-  }\n` +
+  `🍫 Complementos:\n${
+  Array.isArray(p.complementos) && p.complementos.length > 0
+    ? p.complementos.map(c => `  - ${c}`).join('\n')
+    : '  - não informado ⚠️'
+}\n` +
   `💰 Pagamento: ${p.pagamento || '*não informado* ⚠️'}\n` +
   `🏠 Endereço: ${p.endereco || '*não informado* ⚠️'}\n`
 )).join('\n');
