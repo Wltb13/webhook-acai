@@ -158,7 +158,7 @@ app.post('/webhook', (req, res) => {
         return res.json({ fulfillmentText: resposta });
       }
 
-      // MELHORIA DO RESUMO DO PEDIDO
+      // RESUMO FINAL DO PEDIDO
       const resumo = pedidos.map((p, i) => (
         `🍧 Pedido #${i + 1}\n` +
         `🥤 Tamanho: ${p.tamanho || '⚠️ Não informado'}\n` +
@@ -166,12 +166,16 @@ app.post('/webhook', (req, res) => {
           Array.isArray(p.complementos) && p.complementos.length > 0
             ? p.complementos.map(c => `   - ${c}`).join('\n')
             : '   ⚠️ Não informado'
-        }\n` +
-        `💰 Pagamento: ${p.pagamento ? p.pagamento : '⚠️ Não informado'}\n` +
-        `🏠 Endereço: ${p.endereco ? p.endereco : '⚠️ Não informado'}\n`
-      )).join('\n----------------------------------------\n');
+        }\n' +
+        // Só mostra pagamento/endereço no último pedido
+        (i === pedidos.length - 1 ? 
+          (p.pagamento ? `💰 Pagamento: ${p.pagamento}\n` : '') +
+          (p.endereco ? `🏠 Endereço: ${p.endereco}\n` : '')
+          : ''
+        )
+      )).join('\n------------------------------------------\n');
 
-      resposta = `🧾 Resumo do seu pedido (Total: ${pedidos.length})\n\n${resumo}\n✅ Tudo certo! Obrigado por comprar com a gente 🍧🚀\nEm breve entraremos em contato para finalizar seu pedido!`;
+      resposta = `🧾 Resumo do seu pedido (Total: ${pedidos.length})\n\n${resumo}\n✅ Tudo certo! Obrigado por comprar com a gente 🍧🚀\nEm breve entraremos em contato para finalizar seu pedido[...]`;
     }
 
     res.json({ fulfillmentText: resposta });
