@@ -1,6 +1,10 @@
 const express = require('express');
+const fs = require('fs');
 const app = express();
 app.use(express.json());
+
+// Serve arquivos estáticos (painel.html, pedidos.json, etc.)
+app.use(express.static(__dirname));
 
 // Mapa de complementos
 const mapaComplementos = {
@@ -170,6 +174,9 @@ app.post('/webhook', (req, res) => {
       const enderecoFinal = ultimoPedido.endereco || '⚠️ Não informado';
       const total = pedidos.reduce((soma, p) => soma + calcularPreco(p.tamanho), 0);
 
+      // Salva os pedidos em pedidos.json
+      fs.writeFileSync('pedidos.json', JSON.stringify(pedidos, null, 2));
+
       resposta =
         `🧾 Resumo do seu pedido (Total: ${pedidos.length})\n\n` +
         `${resumoPedidos}\n` +
@@ -182,12 +189,5 @@ app.post('/webhook', (req, res) => {
 
     res.json({ fulfillmentText: resposta });
   } catch (error) {
-    res.status(500).json({ fulfillmentText: 'Ocorreu um erro inesperado. Tente novamente.' });
-  }
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`✅ Servidor rodando na porta ${PORT}`);
-});
+    res.status(500).json({ fulfillmentText: 'Ocorreu um erro inesperado
 
