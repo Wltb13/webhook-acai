@@ -134,15 +134,19 @@ app.post('/webhook', (req, res) => {
     }
 
     const resumo = pedidos.map((p, i) => (
-      `🍧 Pedido ${i + 1}:\n` +
-      `🥤 Tamanho: ${p.tamanho || 'não informado'}\n` +
-      `🍫 Complementos: ${Array.isArray(p.complementos) ? p.complementos.join(', ') : 'não informado'}\n` +
-      `💰 Pagamento: ${p.pagamento || 'não informado'}\n` +
-      (p.pagamento && p.pagamento.toLowerCase() === 'dinheiro' && p.troco ? `💵 Troco: ${p.troco}\n` : '') +
-      `🏠 Endereço: ${p.endereco || 'não informado'}`
-    )).join('\n\n');
+  `------------------------------------------\n` +
+  `🍧 Pedido ${i + 1}\n` +
+  `🥤 Tamanho: ${p.tamanho || '*não informado* ⚠️'}\n` +
+  `🍫 Complementos: ${
+    Array.isArray(p.complementos) && p.complementos.length > 0
+      ? p.complementos.join(', ')
+      : '*não informado* ⚠️'
+  }\n` +
+  `💰 Pagamento: ${p.pagamento || '*não informado* ⚠️'}\n` +
+  `🏠 Endereço: ${p.endereco || '*não informado* ⚠️'}\n`
+)).join('\n');
 
-    resposta = `🧾 Resumo do seu pedido:\n\n${resumo}\n\n✅ Tudo certo! Obrigado por comprar com a gente 🍧🚀`;
+resposta = `🧾 Resumo do seu pedido (Total: ${pedidos.length}):\n\n${resumo}\n✅ Tudo certo! Obrigado por comprar com a gente 🍧🚀`;
   }
 
   res.json({ fulfillmentText: resposta });
