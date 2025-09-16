@@ -1,37 +1,147 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>Painel de Pedidos - Bot Açaí</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <title>Painel de Pedidos 🍧</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f7f7f7;
+      padding: 20px;
+    }
+    h1 {
+      color: #6b1e8c;
+    }
+    button {
+      background-color: #6b1e8c;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    .pedido {
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 15px;
+      margin-bottom: 15px;
+      border-radius: 8px;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+    }
+    .pendente {
+      border-left: 5px solid orange;
+    }
+    .pedido h2 {
+      margin-top: 0;
+    }
+    .label {
+      font-weight: bold;
+    }
+  </style>
 </head>
-<body class="container mt-4">
-  <h2>📋 Painel de Pedidos</h2>
-  <div id="pedidos"></div>
+<body>
+  <h1>Painel de Pedidos 🍧</h1>
+  <button onclick="carregarPedidos()">🔄 Atualizar Pedidos</button>
+  <div id="painel"></div>
 
   <script>
-    fetch('/pedidos.json')
+    async function carregarPedidos() {
+      try {
+        const response = await fetch('/pedidos');
+        const pedidos = await response.json();
+
+        // Ordena por horário (mais recente primeiro)
+        pedidos.sort((a, b) => new Date(b.horario) - new Date(a.horario));
+
+        const painel = document.getElementById('painel');
+        painel.innerHTML = '';
+
+        pedidos.forEach(p => {
+          const div = document.createElement('div');
+          div.className = 'pedido pendente';
+
+          let itensHTML = p.itens.map((item, i) => `
+            <p><span class="label">Açaí ${i + 1}:</span> ${item.tamanho}</p>
+            <p><span class="label">Complementos:</span> ${
+              item.complementos && item.complementos.length > 0
+                ? item.complementos.map(c => `🍫 ${c}`).join(', ')
+                : 'Nenhum'
+            }</p>
+          `).join('<hr>');
+
+          div.innerHTML = `
+            <h2>Pedido #${p.id}</h2>
+            <p><span class="label">Cliente:</span> ${p.cliente || 'Não informado'}</p>
+            ${itensHTML}
+            <p><span class="label">Pagamento:</span> ${p.pagamento}</p>
+            <p><span class="label">Troco:</span> ${p.troco}</p>
+            <p><span class="label">Endereço:</span> ${p.endereco}</p>
+            <p><span class="label">Horário:</span> ${new Date(p.horario).toLocaleString()}</p>
+            <p><span class="label">Total:</span> R$${p.total},00</p>
+            <button onclick="imprimirCupom(${p.id})">🖨️ Imprimir Cupom</button>
+            <button onclick="finalizarPedido(${p.id})">✅ Finalizar</button>
+          `;
+
+          painel.appendChild(div);
+        });
+      } catch (error) {
+        document.getElementById('painel').innerHTML = '<p>Erro ao carregar pedidos.</p>';
+        console.error('Erro:', error);
+      }
+    }
+
+    function imprimirCupom(id) {
+      fetch('/pedidos')
+        .then(res => res.json())
+        .then(pedidos => {
+          const pedido = pedidos.find(p => p.id === id);
+          if (!pedido) return;
+
+          const win = window.open('', '', 'width=400,height=600');
+          win.document.write('<pre>');
+          win.document.write('      🍧 CUPOM DE PEDIDO 🍧\n');
+          win.document.write('-----------------------------------\n');
+          win.document.write(`Pedido #${pedido.id}\n`);
+          win.document.write(`Cliente: ${pedido.cliente}\n`);
+          pedido.itens.forEach((item, i) => {
+            win.document.write(`\nAçaí ${i + 1} - ${item.tamanho}\n`);
+            win.document.write(`Complementos:\n`);
+            if (item.complementos.length > 0) {
+              item.complementos.forEach(c => win.document.write(` - ${c}\n`));
+            } else {
+              win.document.write(` - Nenhum\n`);
+            }
+          });
+          win.document.write('\n-----------------------------------\n');
+          win.document.write(`Pagamento: ${pedido.pagamento}\n`);
+          win.document.write(`Troco: ${pedido.troco}\n`);
+          win.document.write(`Endereço: ${pedido.endereco}\n`);
+          win.document.write(`Total: R$${pedido.total},00\n`);
+          win.document.write(`Horário: ${new Date(pedido.horario).toLocaleString()}\n`);
+          win.document.write('-----------------------------------\n');
+          win.document.write('Obrigado pela preferência! 🍧\n');
+          win.document.write('</pre>');
+          win.print();
+        });
+    }
+
+    function finalizarPedido(id) {
+      fetch('/finalizar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      })
       .then(res => res.json())
       .then(data => {
-        const div = document.getElementById('pedidos');
-        data.forEach((pedido, i) => {
-          div.innerHTML += `
-            <div class="card mb-3">
-              <div class="card-body">
-                <h5 class="card-title">🍧 Pedido ${i + 1}</h5>
-                <p><strong>Tamanho:</strong> ${pedido.tamanho}</p>
-                <p><strong>Complementos:</strong> ${pedido.complementos?.join(', ') || 'Não informado'}</p>
-                <p><strong>Pagamento:</strong> ${pedido.pagamento || 'Não informado'}</p>
-                <p><strong>Troco:</strong> ${pedido.troco || 'Não informado'}</p>
-                <p><strong>Endereço:</strong> ${pedido.endereco || 'Não informado'}</p>
-              </div>
-            </div>
-          `;
-        });
+        alert(data.message);
+        carregarPedidos();
       })
-      .catch(() => {
-        document.getElementById('pedidos').innerHTML = '<p class="text-danger">Erro ao carregar os pedidos.</p>';
-      });
+      .catch(err => console.error('Erro:', err));
+    }
+
+    // Carregar pedidos automaticamente ao abrir
+    carregarPedidos();
   </script>
 </body>
 </html>
