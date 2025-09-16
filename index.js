@@ -1,10 +1,12 @@
 const express = require('express');
-const fs = require('fs');
 const app = express();
 app.use(express.json());
 
-// Serve arquivos estáticos como painel.html e pedidos.json
+// Serve arquivos estáticos como painel.html
 app.use(express.static(__dirname));
+
+// Pedidos em memória (não salva em arquivo)
+let pedidosMemoria = [];
 
 // Mapa de complementos
 const mapaComplementos = {
@@ -30,7 +32,7 @@ function calcularPreco(tamanho) {
   return 0;
 }
 
-// Pedidos por sessão
+// Pedidos por sessão (para montagem do cliente)
 const pedidosPorSessao = {};
 
 app.get('/webhook', (req, res) => {
@@ -43,6 +45,9 @@ function getComplementosLista() {
     .join('\n');
 }
 
+// ==================================================
+// WEBHOOK PRINCIPAL (Dialogflow)
+// ==================================================
 app.post('/webhook', (req, res) => {
   try {
     const sessionId = req.body.session || req.body.sessionId || 'default';
@@ -158,6 +163,28 @@ app.post('/webhook', (req, res) => {
         return res.json({ fulfillmentText: resposta });
       }
 
+      const ultimoPedido = pedidos[pedidos.length - 1] || {};
+      const pagamento = ultimoPedido.pagamento || '⚠️ Não informado';
+      const enderecoFinal = ultimoPedido.endereco || '⚠️ Não informado';
+      const total = pedidos.reduce((soma, p) => soma + calcularPreco(p.tamanho), 0);
+
+      const novoPedido = {
+        id: pedidosMemoria.length > 0 ? pedidosMemoria[pedidosMemoria.length - 1].id + 1 : 1,
+        cliente: req.body.queryResult?.outputContexts?.[0]?.parameters?.nome || "Não informado",
+        itens: pedidos.map(p => ({
+          tamanho: p.tamanho,
+          complementos: p.complementos || []
+        })),
+        pagamento,
+        troco: ultimoPedido.troco || "Não informado",
+        endereco: enderecoFinal,
+        total,
+        status: "Pendente",
+        horario: new Date().toISOString()
+      };
+
+      pedidosMemoria.push(novoPedido);
+
       const resumoPedidos = pedidos.map((p, i) =>
         '------------------------------------------\n' +
         `🍧 Pedido ${i + 1}\n` +
@@ -169,13 +196,6 @@ app.post('/webhook', (req, res) => {
         }`
       ).join('\n');
 
-      const ultimoPedido = pedidos[pedidos.length - 1] || {};
-      const pagamento = ultimoPedido.pagamento || '⚠️ Não informado';
-      const enderecoFinal = ultimoPedido.endereco || '⚠️ Não informado';
-      const total = pedidos.reduce((soma, p) => soma + calcularPreco(p.tamanho), 0);
-
-      fs.writeFileSync('pedidos.json', JSON.stringify(pedidos, null, 2));
-
       resposta =
         `🧾 Resumo do seu pedido (Total: ${pedidos.length})\n\n` +
         `${resumoPedidos}\n` +
@@ -184,7 +204,42 @@ app.post('/webhook', (req, res) => {
         `🏠 Endereço: ${enderecoFinal}\n` +
         `💸 Total a pagar: R$${total},00\n\n` +
         '✅ Tudo certo! Obrigado por comprar com a gente 🍧🚀\nEm breve entraremos em contato para finalizar seu pedido!';
+
+      pedidosPorSessao[sessionId] = [];
     }
 
     res.json({ fulfillmentText: resposta });
   } catch (error) {
+    res.status(500).json({ fulfillmentText: 'Ocorreu um erro inesperado. Tente novamente.' });
+  }
+});
+
+// ==================================================
+// NOVA ROTA: LISTAR PEDIDOS PARA O PAINEL
+// ==================================================
+app.get('/pedidos', (req, res) => {
+  res.json(pedidosMemoria.filter(p => p.status === "Pendente"));
+});
+
+// ==================================================
+// NOVA ROTA: FINALIZAR PEDIDO
+// ==================================================
+app.post('/finalizar', (req, res) => {
+  try {
+    const { id } = req.body;
+    pedidosMemoria = pedidosMemoria.map(p =>
+      p.id === id ? { ...p, status: "Finalizado" } : p
+    );
+    res.json({ success: true, message: `Pedido ${id} finalizado!` });
+  } catch (err) {
+    res.status(500).json({ success: false, error: "Erro interno" });
+  }
+});
+
+// ==================================================
+// INICIAR SERVIDOR
+// ==================================================
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor rodando na porta ${PORT}`);
+});
